@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.env/
+venv/
+env/
+ENV/
+*.egg-info/
+*.egg
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# macOS system files
+.DS_Store
+
+# VSCode and IDE config
+.vscode/
+.idea/
+
+# Test and coverage results
+.coverage
+coverage.xml
+htmlcov/
+
+# Environment variable files
+.env
+.env.*
+
+# Log files
+*.log
+
+# PyInstaller build files
+dist/
+build/
+
+# Document portal specific
+document_portal.egg-info/
