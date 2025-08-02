@@ -8,4 +8,8 @@ langchain_huggingface
 sentence-transformers
 pypdf
 faiss-cpu
+structlog
+PyMuPDF
+pydantic
+typing
 -e .
