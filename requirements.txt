@@ -12,4 +12,5 @@ structlog
 PyMuPDF
 pydantic
 typing
+pandas
 -e .

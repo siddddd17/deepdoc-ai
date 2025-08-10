@@ -54,7 +54,7 @@ from src.document_compare.document_comparator import DocumentComparatorLLM
 def load_fake_uploaded_file(file_path:Path):
     return io.BytesIO(file_path.read_bytes())
 
-def test_compare_docuemnts():
+def test_compare_documents():
     ref_path = Path("data/document_compare/Long_Report_V1.pdf")
     act_path = Path("data/document_compare/Long_Report_V2.pdf")
     
@@ -83,6 +83,6 @@ def test_compare_docuemnts():
     print(comparison_df.head())
     
 if __name__ == "__main__":
-    test_compare_docuemnts()
+    test_compare_documents()
     
     
