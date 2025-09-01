@@ -3,7 +3,7 @@ import fitz
 import uuid
 from datetime import datetime
 from logger.custom_logger import CustomLogger
-from exception.custom_exception import DocumentPortalException
+from exception.custom_exception import DeepDocException
 
 class DocumentHandler:
     """
@@ -28,15 +28,16 @@ class DocumentHandler:
 
         except Exception as e:
             self.log.error(f"Error initializing DocumentHandler: {e}")
-            raise DocumentPortalException("Error initializing DocumentHandler", e) from e
+            raise DeepDocException("Error initializing DocumentHandler", e) from e
         
 
     def save_pdf(self,uploaded_file):
         try:
             filename = os.path.basename(uploaded_file.name)
             
+            #TODO: write a service to process any documents in the future 
             if not filename.lower().endswith(".pdf"):
-                raise DocumentPortalException("Invalid file type. Only PDFs are allowed.")
+                raise DeepDocException("Invalid file type. Only PDFs are allowed.")
 
             save_path = os.path.join(self.session_path, filename)
             
@@ -49,7 +50,7 @@ class DocumentHandler:
         
         except Exception as e:
             self.log.error(f"Error saving PDF: {e}")
-            raise DocumentPortalException("Error saving PDF", e) from e
+            raise DeepDocException("Error saving PDF", e) from e
 
     def read_pdf(self, pdf_path:str)->str:
         try:
@@ -63,13 +64,13 @@ class DocumentHandler:
             return text
         except Exception as e:
             self.log.error(f"Error reading PDF: {e}")
-            raise DocumentPortalException("Error reading PDF", e) from e
+            raise DeepDocException("Error reading PDF", e) from e
     
 if __name__ == "__main__":
     from pathlib import Path
     from io import BytesIO
     
-    pdf_path=r"C:\\Users\\sunny\\document_portal\\data\\document_analysis\\sample.pdf"
+    pdf_path=r"data/document_analysis/_Deep_Learnings_pdf_1741613661.pdf"
     class DummnyFile:
         def __init__(self,file_path):
             self.name = Path(file_path).name
@@ -79,7 +80,7 @@ if __name__ == "__main__":
         
     dummy_pdf = DummnyFile(pdf_path)
     
-    handler = DocumentHandler()
+    handler = DocumentHandler(session_id="test session")
     
     try:
         saved_path=handler.save_pdf(dummy_pdf)
