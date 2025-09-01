@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 import fitz
 from logger.custom_logger import CustomLogger
-from exception.custom_exception import DocumentPortalException
+from exception.custom_exception import DeepDocException
 
 class DocumentIngestion:
     def __init__(self,base_dir:str="data\\document_compare"):
@@ -23,7 +23,7 @@ class DocumentIngestion:
                 self.log.info("Directory cleaned", directory=str(self.base_dir))
         except Exception as e:
             self.log.error(f"Error deleting existing files: {e}")
-            raise DocumentPortalException("An error occurred while deleting existing files.", sys)
+            raise DeepDocException("An error occurred while deleting existing files.", sys)
      
     def save_uploaded_files(self,reference_file, actual_file):
         """
@@ -49,7 +49,7 @@ class DocumentIngestion:
             return ref_path, act_path
         except Exception as e:
             self.log.error(f"Error saving uploaded files: {e}")
-            raise DocumentPortalException("An error occurred while saving uploaded files.", sys)
+            raise DeepDocException("An error occurred while saving uploaded files.", sys)
 
     def read_pdf(self,pdf_path: Path)->str:
         """
@@ -69,7 +69,7 @@ class DocumentIngestion:
                 return "\n".join(all_text)
         except Exception as e:
             self.log.error(f"Error reading PDF: {e}")
-            raise DocumentPortalException("An error occurred while reading the PDF.", sys)
+            raise DeepDocException("An error occurred while reading the PDF.", sys)
         
     def combine_documents(self)->str:
         try:
@@ -89,5 +89,5 @@ class DocumentIngestion:
 
         except Exception as e:
             self.log.error(f"Error combining documents: {e}")
-            raise DocumentPortalException("An error occurred while combining documents.", sys)
+            raise DeepDocException("An error occurred while combining documents.", sys)
         

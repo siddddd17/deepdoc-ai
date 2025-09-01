@@ -2,7 +2,7 @@ import sys
 from dotenv import load_dotenv
 import pandas as pd
 from logger.custom_logger import CustomLogger
-from exception.custom_exception import DocumentPortalException
+from exception.custom_exception import DeepDocException
 from model.models import *
 from prompt.prompt_library import PROMPT_REGISTRY
 from utils.model_loader import ModelLoader
@@ -38,7 +38,7 @@ class DocumentComparatorLLM:
             
         except Exception as e:
             self.log.error(f"Error in compare_documents: {e}")
-            raise DocumentPortalException("An error occurred while comparing documents.",sys)
+            raise DeepDocException("An error occurred while comparing documents.",sys)
     
     def _format_response(self,response_parsed: list[dict]) -> pd.DataFrame: #type: ignore
         """
@@ -50,4 +50,4 @@ class DocumentComparatorLLM:
             return df
         except Exception as e:
             self.log.error("Error formatting response into DataFrame", error=str(e))
-            raise DocumentPortalException("Error formatting response",sys)
+            raise DeepDocException("Error formatting response",sys)

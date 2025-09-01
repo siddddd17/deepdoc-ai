@@ -1,6 +1,5 @@
 faiss_db:
-  collection_name: "document_portal"
-
+  collection_name: "deepdoc_ai"
 
 embedding_model:
   provider: "huggingface"
