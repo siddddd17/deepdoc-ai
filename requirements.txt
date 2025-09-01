@@ -13,4 +13,5 @@ PyMuPDF
 pydantic
 typing
 pandas
+tiktoken
 -e .
