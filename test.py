@@ -4,7 +4,7 @@ from src.document_analyzer.data_ingestion import DocumentHandler       # Your PD
 from src.document_analyzer.data_analysis import DocumentAnalyzer  # Your DocumentAnalyzer class
 
 # Path to the PDF you want to test
-PDF_PATH = r"data/document_analysis/_Deep_Learnings_pdf_1741613661.pdf"
+PDF_PATH = r"notebook/data/sample.pdf"
 
 # Dummy file wrapper to simulate uploaded file (Streamlit style)
 class DummyFile:

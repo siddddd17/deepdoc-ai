@@ -36,7 +36,6 @@ class DocumentAnalyzer:
             self.parser = JsonOutputParser(pydantic_object=Metadata)
             self.fixing_parser = OutputFixingParser.from_llm(parser=self.parser, llm=self.llm)
             
-            # Load specialized prompts
             self.chunk_prompt = METADATA_PROMPT_REGISTRY["chunk_analysis"]
             self.full_doc_prompt = METADATA_PROMPT_REGISTRY["full_document"]
             self.context_prompt = METADATA_PROMPT_REGISTRY["context_aware_chunk"]
@@ -54,10 +53,10 @@ class DocumentAnalyzer:
                 length_function=tiktoken_len
             )
 
-            self.log.info("EnhancedDocumentAnalyzer initialized successfully")
+            self.log.info("DocumentAnalyzer initialized successfully")
             
         except Exception as e:
-            self.log.error(f"Error initializing EnhancedDocumentAnalyzer: {e}")
+            self.log.error(f"Error initializing DocumentAnalyzer: {e}")
             raise DeepDocException("Error in DocumentAnalyzer initialization", sys)
     
     def _should_use_chunking(self, document_text: str, threshold: int = 6000) -> bool:
