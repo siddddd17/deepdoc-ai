@@ -13,15 +13,14 @@ from langchain.output_parsers import OutputFixingParser
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 
-# Import your custom prompts
 from prompt.prompt_library import METADATA_PROMPT_REGISTRY
 
 
 class DocumentAnalyzer:
     
     def __init__(self, 
-                 chunk_size: int = 1200,  # Larger chunks for better context
-                 chunk_overlap: int = 300,  # More overlap for metadata continuity
+                 chunk_size: int = 1200,  
+                 chunk_overlap: int = 300, 
                  max_workers: int = 3,
                  use_context_aware_prompts: bool = True):
         

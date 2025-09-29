@@ -5,18 +5,20 @@ from datetime import datetime
 import uuid
 from logger.custom_logger import CustomLogger
 from exception.custom_exception import DeepDocException
+import shutil
+from typing import Optional
 
 #TODO: Use factory pattern 
 class DocumentIngestion:
     def __init__(self,base_dir:str="data/document_compare", session_id: Optional[str]= None):
         self.log = CustomLogger().get_logger(__name__)
         self.base_dir = Path(base_dir)
-        self.session_id = session_id or _generate_session_id()
-        self.base_dir = self.base_dir / self.session_id
-        self.base_dir.mkdir(parents=True, exist_ok=True)
-        log.info("DocumentIngestion initialized", base_dir=str(self.base_dir), session_id=self.session_id)
+        self.session_id = session_id or self.generate_session_id()
+        self.session_path = self.base_dir / self.session_id
+        self.session_path.mkdir(parents=True, exist_ok=True)
+        self.log.info("DocumentIngestion initialized", base_dir=str(self.base_dir), session_id=self.session_id)
 
-    def _generate_session_id() -> str:
+    def generate_session_id(self) -> str:
         return f"session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     
     def delete_existing_files(self):
@@ -44,18 +46,18 @@ class DocumentIngestion:
             for file_object, output_path in ((reference_file, ref_path), (actual_file, act_path)):
                 if not file_object.name.lower().endswith('.pdf'):
                     raise ValueError("Invalide File Type. Only PDFs are allowed.")
-                if file_object.hasAttr("getbuffer") :
-                    with open(output_path, "wb") as f: 
-                        f.write(file_object.getbuffer())
-                else : 
+                if hasattr(file_object, "read") :
                     with open(output_path, "wb") as f: 
                         f.write(file_object.read())
+                else : 
+                    with open(output_path, "wb") as f: 
+                        f.write(file_object.getbuffer())
             self.log.info("Files saved", reference=str(ref_path), actual=str(act_path))
             return ref_path, act_path
         except Exception as e:
             self.log.error(f"Error saving uploaded files: {e}", error=str(e), 
                            reference_file=reference_file.name, actual_file=actual_file.name, session_id=self.session_id)
-            raise DeepDocException("An error occurred while saving uploaded files.", sys)
+            raise DeepDocException("An error occurred while saving uploaded files.", e) from e
 
     def read_pdf(self,pdf_path: Path)->str:
         """
@@ -102,11 +104,11 @@ class DocumentIngestion:
         Cleans up old session directories, keeping only the latest 'keep_latest' sessions.
         """
         try: 
-            session_dirs = sorted([ d for d in self.base_dir.iterdir() if d.is_dir() and d.name.startswith("session_")] , reverse=True) 
+            session_dirs = sorted([ d for d in self.base_dir.iterdir() if d.is_dir() and d.name.startswith("session")] , reverse=True) 
             for old_dir in session_dirs[keep_latest:]:
                 shutil.rmtree(old_dir)
                 self.log.info("Old session directory deleted", path=str(old_dir))
         except Exception as e:
             self.log.error(f"Error cleaning old sessions: {e}")
-            raise DeepDocException("An error occurred while cleaning old sessions.", sys)
+            raise DeepDocException("An error occurred while cleaning old sessions.", sys) from e; 
 
