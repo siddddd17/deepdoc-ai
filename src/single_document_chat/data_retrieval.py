@@ -49,7 +49,9 @@ class ConversationalRag:
     
     def _get_session_history(self, session_id:str):
         try:
-            pass
+            history = ChatMessageHistory(session_id=session_id)
+            self.log.info("Retrieved session history", session_id=self.session_id)
+            return history
         except Exception as e:
             self.log.error(f"Error getting session history: {e}")
             raise DeepDocException("Error getting session history", sys)
