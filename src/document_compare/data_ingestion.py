@@ -19,7 +19,7 @@ class DocumentIngestion:
         self.log.info("DocumentIngestion initialized", base_dir=str(self.base_dir), session_id=self.session_id)
 
     def generate_session_id(self) -> str:
-        return f"session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        return f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     
     def delete_existing_files(self):
         """
@@ -99,6 +99,7 @@ class DocumentIngestion:
             self.log.error(f"Error combining documents: {e}")
             raise DeepDocException("An error occurred while combining documents.", sys)
     
+    #TODO: can also add cron job to clean sessions periodically/ implement s3 lifecycle rules
     def clean_old_sessions(self, keep_latest = 3):
         """
         Cleans up old session directories, keeping only the latest 'keep_latest' sessions.

@@ -1,16 +1,17 @@
 import traceback
 import sys
 from logger.custom_logger import CustomLogger
+from typing import Optional, Any as Object
 logger=CustomLogger().get_logger(__file__)
 
 class DeepDocException(Exception):
     """Base exception for all DeepDoc errors"""
-    def __init__(self,error_message):
-        _,_,exc_tb= sys.exc_info()
+    def __init__(self,error_message, error_detail: sys = None):
+        _,_,exc_tb= error_detail.exc_info()
         self.file_name=exc_tb.tb_frame.f_code.co_filename
         self.lineno=exc_tb.tb_lineno
         self.error_message=str(error_message)
-        self.traceback_str = ''.join(traceback.format_exception(*sys.exc_info())) 
+        self.traceback_str = ''.join(traceback.format_exception(*error_detail.exc_info())) 
         
     def __str__(self):
        return f"""
