@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 import sys
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, UnstructuredMarkdownLoader, DocxLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader, UnstructuredMarkdownLoader, Docx2txtLoader
 from logger.custom_logger import CustomLogger
 from exception.custom_exception import DeepDocException
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -56,7 +56,7 @@ class document_ingestor:
                     case '.pdf':
                         loader = PyPDFLoader(str(save_path))
                     case '.docx':
-                        loader = DocxLoader(str(save_path))
+                        loader = Docx2txtLoader(str(save_path))
                     case '.md':
                         loader = UnstructuredMarkdownLoader(str(save_path))
                     case '.txt':
@@ -88,7 +88,7 @@ class document_ingestor:
             self.log.info("Documents split into chunks", chunk_count=len(chunks), session_id=self.session_id)
             embeddings = self.model_loader.load_embeddings()
             vector_store = FAISS.from_documents(chunks, embeddings)
-            
+
             #save the vector store
             vector_store.save_local(str(self.sesssion_faiss_path))
             self.log.info("FAISS vector store created and saved", faiss_dir=str(self.sesssion_faiss_path), session_id=self.session_id)
