@@ -39,3 +39,6 @@ build/
 
 # Document portal specific
 document_portal.egg-info/
+
+#Archived directory 
+archive/ 

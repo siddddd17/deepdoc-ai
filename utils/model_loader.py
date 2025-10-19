@@ -9,7 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 #from langchain_openai import ChatOpenAI
 from logger.custom_logger import CustomLogger
-from exception.custom_exception import DeepDocException
+from exception.custom_exception_archive import DeepDocException
 log = CustomLogger().get_logger(__name__)
 
 class ModelLoader:
