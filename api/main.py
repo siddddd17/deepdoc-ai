@@ -3,6 +3,19 @@ from fastapi.responses import HTMLResponse, JsonResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+import os 
+from typing import Any, Optionsal, Dict, List
+
+from src.document_ingestion.data_ingestion import (
+    DocHandler,
+    DocumentComparator, 
+    ChatIngestor, 
+    FaissManager
+)
+
+from src.document_analyzer.data_analysis import DocumentAnalyzer
+from src.document_compare.document_comparator import DocumentComparatorLLM
+from src.document_chat.retrieval import ConversationalRAG 
 
 app = FastAPI(title="DeepDoc AI", version="1.0.0")
 
@@ -26,10 +39,40 @@ async def serve_ui(request: Request):
 async def health_check():
     return JsonResponse(content={"status": "ok"}, status_code=200)
 
+class FastAPIFileADapter:
+    """
+    Adapter to convert FastAPI UploadFile to a file-like object
+    """
+    def __init__(self, upload_file: UploadFile):
+        self.upload_file = upload_file
+        self.name = upload_file.filename
+
+    def getbuffer(self):
+        self.upload_file.file.seek(0)
+        return self.upload_file.file.read()
+
+def _read_pdf_via_handler(handler: DocHandler, pdf_path: str) -> str:
+    """
+    Helper function to read PDF using DocHandler
+    """
+    try:
+        text = handler.read_pdf(pdf_path)
+        return text
+    except Exception as e:
+        raise HttpException(status_code=500, detail=f"Failed to read PDF at {pdf_path}") from e
+    
 @app.post("/analyse", response_class=JsonResponse)
 async def analyse_documents(file: UploadFile = File(...)) -> Any: 
+    """
+    Endpoint to analyze a single PDF document
+    """
     try: 
-        pass 
+        dh = DocHandler() 
+        save_path = dh.save_pdf(FastAPIFileADapter(file))
+        text = _read_pdf_via_handler(dh, save_path)
+        analyzer = DocumentAnalyzer()
+        analysis_result = analyzer.analyze_document(text)
+        return JsonResponse(content=analysis_result, status_code=200)
     except HttpException as http_exc:
         raise http_exc
     except Exception as e:
@@ -37,28 +80,85 @@ async def analyse_documents(file: UploadFile = File(...)) -> Any:
 
 @app.pos("/compare", response_class=JsonResponse)
 async def compare_documents(reference_file: UploadFile = File(...), actual_file: UploadFile = File(...)) -> Any:
+    """ 
+    Endpoint to compare two PDF documents
+    """
     try:
-        pass 
+        dc = DocumentComparator()
+        ref_path, act_path = dc.save_uploaded_files(FastAPIFileADapter(reference_file), FastAPIFileADapter(actual_file))
+        _ = ref_path, act_path
+        combined_text = dc.combine_documents()
+        comparator = DocumentComparatorLLM()
+        df = comparator.compare_documents(combined_text)
+        return JsonResponse(content=df.to_dict(orient="records"), "session_id" : dc.session_id, status_code=200)
     except HttpException as http_exc:
         raise http_exc
     except Exception as e:
         raise HttpException(status_code=500, detail=f"Comparison failed") from e
 
 @app.post('/chat/index')
-async def chat_with_documents(uploaded_files: list[UploadFile] = File(...), user_query: str = Form(...)) -> Any:
+async def chat_with_documents(
+    files: List[UploadFile] = File(...),
+    session_id: Optional[str] = Form(None),
+    use_session_dirs: bool = Form(True),
+    chunk_size: int = Form(1000),
+    chunk_overlap: int = Form(200),
+    k: int = Form(5)
+) -> Any:
+    """
+    Endpoint to ingest documents and build FAISS index for chat
+    """
     try:
-        pass 
+        wrapped = [FastAPIFileADapter(f) for f in files]
+        ci = ChatIngestor(
+            temp_base = UPLOAD_BASE, 
+            faiss_base = FAISS_BASE,
+            use_session_dirs = use_session_dirs,
+            session_id = session_id or None
+        )
+        ci.build_retriever(wrapped, chunk_size=chunk_size, chunk_overlap=chunk_overlap, k=k)
+        return {
+            "session_id" : ci.session_id, 
+            "k" : k,
+            "use_session_dirs" : use_session_dirs,
+            "engine" : "LCEL-RAG"
+        }
     except HttpException as http_exc:
         raise http_exc
     except Exception as e:
         raise HttpException(status_code=500, detail=f"Chat with documents failed") from e
 
 @app.post('/chat/query')
-async def chat_with_query(session_id: str = Form(...), user_query: str = Form(...)) -> Any:
+async def chat_with_query(
+    user_query: str = Form(...),
+    session_id: Optional[str] = Form(None),
+    use_session_dirs: bool = Form(True)
+) -> Any:
+    """
+    Endpoint to chat with ingested documents using a query
+    """
     try:
-        pass 
+        if use_session_dirs and not session_id:
+            raise HttpException(status_code=400, detail="Session ID must be provided when use_session_dirs is True.")
+
+        #Prepare Faiss index path 
+        index_dir = os.path.join(FAISS_BASE, session_id) if use_session_dirs else FAISS_BASE # type : ignore
+        if not os.path.isdir(index_dir):
+            raise HttpException(status_code=404, detail=f"FAISS index directory not found: {index_dir}")
+
+        rag = ConversationalRAG(session_id = session_id) #type : ignore 
+        rag.load_retriever_from_faiss(index_dir)
+
+        response = rag.invoke(user_query, chat_history=[])
+        result = {
+            "answer" : response, 
+            "session_id" : session_idm 
+            "k" : k, 
+            "engine" : "LCEL-RAG"
+        }
+        return result
     except HttpException as http_exc:
         raise http_exc
     except Exception as e:  
         raise HttpException(status_code=500, detail=f"Chat with query failed") from e
-        
+    
