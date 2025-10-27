@@ -42,3 +42,8 @@ document_portal.egg-info/
 
 #Archived directory 
 archive/ 
+
+#Faiss index
+faiss_index/
+
+data/

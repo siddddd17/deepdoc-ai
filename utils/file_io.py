@@ -6,10 +6,12 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import uuid
 from typing import Iterable, List
-from logger import custom_logger as log
+from logger.custom_logger import CustomLogger
 from exception.custom_exception import DeepDocException
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+
+log = CustomLogger().get_logger(__file__)
 
 # ----------------------------- #
 # Helpers (file I/O + loading)  #
@@ -44,4 +46,4 @@ def save_uploaded_files(uploaded_files: Iterable, target_dir: Path) -> List[Path
         return saved
     except Exception as e:
         log.error("Failed to save uploaded files", error=str(e), dir=str(target_dir))
-        raise DeepDocEx("Failed to save uploaded files", e) from e
+        raise DeepDocException("Failed to save uploaded files", e) from e

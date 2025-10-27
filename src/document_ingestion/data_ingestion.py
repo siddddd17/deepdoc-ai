@@ -56,17 +56,24 @@ class FaissManager:
     def _save_metadata(self):
         self.metadata_path.write_text(json.dumps(self._meta, ensure_ascii = False, indent=4), encoding = 'utf-8')
 
-    def load_or_create(self, docs: List[Document]):
+    def load_or_create(self,texts:Optional[List[str]]=None, metadatas: Optional[List[dict]] = None):
+        ## if we running first time then it will not go in this block
         if self._exists():
-            self.vector_store = FAISS.load_local(
-            str(self.index_dir),
-            embeddings = self.embedding_model,
-            allow_dangerous_serialization = True
+            self.vs = FAISS.load_local(
+                str(self.index_dir),
+                embeddings=self.embedding_model,
+                allow_dangerous_deserialization=True,
             )
-            self.log.info("FAISS index loaded from disk", index_dir=str(self.index_dir))
-        return self.vector_store
+            return self.vs
+        
+        
+        if not texts:
+            raise DeepDocException("No existing FAISS index and no data to create one", sys)
+        self.vs = FAISS.from_texts(texts=texts, embedding=self.embedding_model, metadatas=metadatas or [])
+        self.vs.save_local(str(self.index_dir))
+        return self.vs
     
-    def add_documents(self):
+    def add_documents(self, docs: List[Document]):
         if self.vs is None:
             raise DeepDocException("Vector store is not initialized", sys)
         new_docs: List[Document] = []
@@ -87,11 +94,12 @@ class DocHandler:
     PDF save + read (page-wise) for analysis.
     """
     def __init__(self, data_dir: Optional[str] = None, session_id: Optional[str] = None):
+        self.log=CustomLogger().get_logger(__name__)
         self.data_dir = data_dir or os.getenv("DATA_STORAGE_PATH", os.path.join(os.getcwd(), "data", "document_analysis"))
         self.session_id = session_id or generate_session_id("session")
         self.session_path = os.path.join(self.data_dir, self.session_id)
         os.makedirs(self.session_path, exist_ok=True)
-        log.info("DocHandler initialized", session_id=self.session_id, session_path=self.session_path)
+        self.log.info("DocHandler initialized", session_id=self.session_id, session_path=self.session_path)
 
     def save_pdf(self, uploaded_file) -> str:
         try:
@@ -104,10 +112,10 @@ class DocHandler:
                     f.write(uploaded_file.read())
                 else:
                     f.write(uploaded_file.getbuffer())
-            log.info("PDF saved successfully", file=filename, save_path=save_path, session_id=self.session_id)
+            self.log.info("PDF saved successfully", file=filename, save_path=save_path, session_id=self.session_id)
             return save_path
         except Exception as e:
-            log.error("Failed to save PDF", error=str(e), session_id=self.session_id)
+            self.log.error("Failed to save PDF", error=str(e), session_id=self.session_id)
             raise DeepDocException(f"Failed to save PDF: {str(e)}", e) from e
 
     def read_pdf(self, pdf_path: str) -> str:
@@ -118,10 +126,10 @@ class DocHandler:
                     page = doc.load_page(page_num)
                     text_chunks.append(f"\n--- Page {page_num + 1} ---\n{page.get_text()}")  # type: ignore
             text = "\n".join(text_chunks)
-            log.info("PDF read successfully", pdf_path=pdf_path, session_id=self.session_id, pages=len(text_chunks))
+            self.log.info("PDF read successfully", pdf_path=pdf_path, session_id=self.session_id, pages=len(text_chunks))
             return text
         except Exception as e:
-            log.error("Failed to read PDF", error=str(e), pdf_path=pdf_path, session_id=self.session_id)
+            self.log.error("Failed to read PDF", error=str(e), pdf_path=pdf_path, session_id=self.session_id)
             raise DeepDocException(f"Could not process PDF: {pdf_path}", e) from e
 
 class DocumentComparator: 
@@ -129,11 +137,12 @@ class DocumentComparator:
     Save, read & combine PDFs for comparison with session-based versioning.
     """
     def __init__(self, base_dir: str = "data/document_compare", session_id: Optional[str] = None):
+        self.log=CustomLogger().get_logger(__name__)
         self.base_dir = Path(base_dir)
         self.session_id = session_id or generate_session_id()
         self.session_path = self.base_dir / self.session_id
         self.session_path.mkdir(parents=True, exist_ok=True)
-        log.info("DocumentComparator initialized", session_path=str(self.session_path))
+        self.log.info("DocumentComparator initialized", session_path=str(self.session_path))
 
     def save_uploaded_files(self, reference_file, actual_file):
         try:
@@ -147,10 +156,10 @@ class DocumentComparator:
                         f.write(fobj.read())
                     else:
                         f.write(fobj.getbuffer())
-            log.info("Files saved", reference=str(ref_path), actual=str(act_path), session=self.session_id)
+            self.log.info("Files saved", reference=str(ref_path), actual=str(act_path), session=self.session_id)
             return ref_path, act_path
         except Exception as e:
-            log.error("Error saving PDF files", error=str(e), session=self.session_id)
+            self.log.error("Error saving PDF files", error=str(e), session=self.session_id)
             raise DeepDocException("Error saving files", e) from e
 
     def read_pdf(self, pdf_path: Path) -> str:
@@ -164,10 +173,10 @@ class DocumentComparator:
                     text = page.get_text()  # type: ignore
                     if text.strip():
                         parts.append(f"\n --- Page {page_num + 1} --- \n{text}")
-            log.info("PDF read successfully", file=str(pdf_path), pages=len(parts))
+            self.log.info("PDF read successfully", file=str(pdf_path), pages=len(parts))
             return "\n".join(parts)
         except Exception as e:
-            log.error("Error reading PDF", file=str(pdf_path), error=str(e))
+            self.log.error("Error reading PDF", file=str(pdf_path), error=str(e))
             raise DeepDocException("Error reading PDF", e) from e
 
     def combine_documents(self) -> str:
@@ -178,10 +187,10 @@ class DocumentComparator:
                     content = self.read_pdf(file)
                     doc_parts.append(f"Document: {file.name}\n{content}")
             combined_text = "\n\n".join(doc_parts)
-            log.info("Documents combined", count=len(doc_parts), session=self.session_id)
+            self.log.info("Documents combined", count=len(doc_parts), session=self.session_id)
             return combined_text
         except Exception as e:
-            log.error("Error combining documents", error=str(e), session=self.session_id)
+            self.log.error("Error combining documents", error=str(e), session=self.session_id)
             raise DeepDocException("Error combining documents", e) from e
 
     def clean_old_sessions(self, keep_latest: int = 3):
@@ -189,11 +198,11 @@ class DocumentComparator:
             sessions = sorted([f for f in self.base_dir.iterdir() if f.is_dir()], reverse=True)
             for folder in sessions[keep_latest:]:
                 shutil.rmtree(folder, ignore_errors=True)
-                log.info("Old session folder deleted", path=str(folder))
+                self.log.info("Old session folder deleted", path=str(folder))
         except Exception as e:
-            log.error("Error cleaning old sessions", error=str(e))
+            self.log.error("Error cleaning old sessions", error=str(e))
             raise DeepDocException("Error cleaning old sessions", e) from e
-
+        
 class ChatIngestor: 
     def __init__(
         self,
@@ -206,13 +215,13 @@ class ChatIngestor:
             self.log = CustomLogger().get_logger(__name__)
             self.model_loader = ModelLoader()
             self.use_session = use_session_dirs
-            self.session_id = session_id or _session_id()
+            self.session_id = session_id or generate_session_id()
             self.temp_base = Path(temp_base)
             self.temp_base.mkdir(parents=True, exist_ok=True)
             self.faiss_base = Path(faiss_base)
             self.faiss_base.mkdir(parents=True, exist_ok=True)
-            self.temp_dir = self._resolve_dir(self, temp_base)
-            self.faiss_dir = self._resolve_dir(self, faiss_base)
+            self.temp_dir = self._resolve_dir(temp_base)
+            self.faiss_dir = self._resolve_dir(faiss_base)
 
             self.log.info(
                 "ChatIngestor initialized",
@@ -243,7 +252,7 @@ class ChatIngestor:
     self, 
     *,
     uploaded_files: Iterable,
-    chink_size: int = 100, 
+    chunk_size: int = 100, 
     chunk_overlap: int = 200, 
     k: int = 5
     ):
@@ -267,11 +276,11 @@ class ChatIngestor:
                 vs = fm.load_or_create(texts=texts, metadatas=metas)
                 
             added = fm.add_documents(chunks)
-            log.info("FAISS index updated", added=added, index=str(self.faiss_dir))
+            self.log.info("FAISS index updated", added=added, index=str(self.faiss_dir))
             
             return vs.as_retriever(search_type="similarity", search_kwargs={"k": k})
             
         except Exception as e:
-            log.error("Failed to build retriever", error=str(e))
+            # log.error("Failed to build retriever", error=str(e))
             raise DeepDocException("Failed to build retriever", e) from e
         

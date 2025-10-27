@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Document Portal</title>
+  <title>DeepDoc AI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Google Fonts for classy look -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
   <header class="app-header">
     <div class="brand">
       <span class="logo">📚</span>
-      <h1>Document Portal</h1>
+      <h1>DeepDoc AI</h1>
     </div>
     <nav class="mode-switch">
       <button class="tab-btn active" data-tab="analysis">Document Analysis</button>
@@ -27,7 +27,7 @@
     <!-- ============== ANALYSIS ============== -->
     <section id="tab-analysis" class="tab-panel active">
       <div class="card">
-        <h2>🔎 Analyze a Document</h2>
+        <h2>Analyze a Document</h2>
         <p class="muted">Upload a PDF and get structured analysis.</p>
         <form id="form-analyze" class="form-grid" onsubmit="return false;">
           <div class="field">
@@ -49,7 +49,7 @@
     <!-- ============== COMPARE ============== -->
     <section id="tab-compare" class="tab-panel">
       <div class="card">
-        <h2>🆚 Compare Two Documents</h2>
+        <h2>Compare Two Documents</h2>
         <p class="muted">Upload a reference PDF and an actual PDF to see page-wise differences.</p>
         <form id="form-compare" class="form-grid-2" onsubmit="return false;">
           <div class="field">
@@ -84,7 +84,7 @@
     <!-- ============== CHAT ============== -->
     <section id="tab-chat" class="tab-panel">
       <div class="card">
-        <h2>💬 Chat with your Documents</h2>
+        <h2>Chat with your Documents</h2>
         <p class="muted">Upload PDF/DOCX/TXT; we’ll index to FAISS and enable RAG chat.</p>
 
         <form id="form-chat-index" class="form-grid" onsubmit="return false;">
@@ -151,7 +151,7 @@
   </main>
 
   <footer class="app-footer">
-    <div>© Document Portal • Demo UI</div>
+    <div>© DeepDoc AI • Demo UI</div>
     <div class="tiny">Frontend only – hook to your FastAPI later.</div>
   </footer>
 
@@ -209,8 +209,9 @@
       tbody.innerHTML = `<tr><td colspan="2" class="center">Comparing…</td></tr>`;
 
       const fd = new FormData();
-      fd.append("reference", ref); // <-- must be 'reference'
-      fd.append("actual", act);    // <-- must be 'actual'
+      fd.append("reference_file", ref);  
+      fd.append("actual_file", act);     
+
 
       const res = await fetch(`${API_BASE}/compare`, { method: "POST", body: fd });
       if (!res.ok) {
@@ -287,7 +288,7 @@
       ans.textContent = "Thinking…";
 
       const fd = new FormData();
-      fd.append("question", q);
+      fd.append("user_query", q);
       fd.append("use_session_dirs", useSess ? "true" : "false");
       fd.append("k", String(k));
       if (useSess && currentSession) fd.append("session_id", currentSession);
