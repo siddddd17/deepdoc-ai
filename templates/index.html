@@ -219,7 +219,7 @@
         throw new Error(err.detail || `HTTP ${res.status}`);
       }
       const json = await res.json(); // { rows: [...] }
-      const rows = json.rows || [];
+      const rows = json.records || [];
       if (!rows.length) {
         tbody.innerHTML = `<tr><td colspan="2" class="muted center">No differences found.</td></tr>`;
         return;

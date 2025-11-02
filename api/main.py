@@ -17,6 +17,7 @@ from src.document_analyzer.data_analysis import DocumentAnalyzer
 from src.document_compare.document_comparator import DocumentComparatorLLM
 from src.document_chat.retrieval import ConversationalRAG
 from utils.document_ops import read_pdf_via_handler 
+from logger import GLOBAL_LOGGER as log
 
 FAISS_BASE = os.getenv("FAISS_BASE", "faiss_index")
 UPLOAD_BASE = os.getenv("UPLOAD_BASE", "data")
@@ -41,6 +42,7 @@ async def serve_ui(request: Request):
 
 @app.get("/health", response_class=JSONResponse)
 async def health_check():
+    log.info("Health check passed")
     return JSONResponse(content={"status": "ok"}, status_code=200)
 
 class FastAPIFileADapter:
@@ -71,15 +73,19 @@ async def analyse_documents(file: UploadFile = File(...)) -> Any:
     Endpoint to analyze a single PDF document
     """
     try: 
+        log.info("Received file for analysis", filename=file.filename)
         dh = DocHandler() 
         save_path = dh.save_pdf(FastAPIFileADapter(file))
         text = read_pdf_via_handler(dh, save_path)
         analyzer = DocumentAnalyzer()
         analysis_result = analyzer.analyze_document(text)
+        log.info("Document analysis completed", filename=file.filename)
         return JSONResponse(content=analysis_result, status_code=200)
     except HTTPException as http_exc:
+        log.error("HTTP exception during document analysis", error=str(http_exc))
         raise http_exc
     except Exception as e:
+        log.error("Exception during document analysis", error=str(e))
         raise HTTPException(status_code=500, detail=f"Analysis failed") from e
 
 @app.post("/compare", response_class=JSONResponse)
@@ -88,20 +94,22 @@ async def compare_documents(reference_file: UploadFile = File(...), actual_file:
     Endpoint to compare two PDF documents
     """
     try:
+        log.info("Received files for comparison",
+                 reference_filename=reference_file.filename,
+                 actual_filename=actual_file.filename)
         dc = DocumentComparator()
         ref_path, act_path = dc.save_uploaded_files(FastAPIFileADapter(reference_file), FastAPIFileADapter(actual_file))
         _ = ref_path, act_path
         combined_text = dc.combine_documents()
         comparator = DocumentComparatorLLM()
         df = comparator.compare_documents(combined_text)
+        log.info("Document comparison completed", session_id=dc.session_id)
         return JSONResponse(
             content={
                 "records": df.to_dict(orient="records"),
                 "session_id": dc.session_id
-            },
-            status_code=200
+            }
         )
-
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
