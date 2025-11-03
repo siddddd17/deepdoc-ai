@@ -16,7 +16,7 @@ from src.document_ingestion.data_ingestion import (
 from src.document_analyzer.data_analysis import DocumentAnalyzer
 from src.document_compare.document_comparator import DocumentComparatorLLM
 from src.document_chat.retrieval import ConversationalRAG
-from utils.document_ops import read_pdf_via_handler 
+from utils.document_ops import read_pdf_via_handler , FastAPIFileADapter
 from logger import GLOBAL_LOGGER as log
 
 FAISS_BASE = os.getenv("FAISS_BASE", "faiss_index")
@@ -42,20 +42,11 @@ async def serve_ui(request: Request):
 
 @app.get("/health", response_class=JSONResponse)
 async def health_check():
+    """
+    Health check endpoint.
+    """
     log.info("Health check passed")
     return JSONResponse(content={"status": "ok"}, status_code=200)
-
-class FastAPIFileADapter:
-    """
-    Adapter to convert FastAPI UploadFile to a file-like object
-    """
-    def __init__(self, upload_file: UploadFile):
-        self.upload_file = upload_file
-        self.name = upload_file.filename
-
-    def getbuffer(self):
-        self.upload_file.file.seek(0)
-        return self.upload_file.file.read()
 
 def _read_pdf_via_handler(handler: DocHandler, pdf_path: str) -> str:
     """
@@ -116,7 +107,7 @@ async def compare_documents(reference_file: UploadFile = File(...), actual_file:
         raise HTTPException(status_code=500, detail = f"Comparison failed") from e
 
 @app.post('/chat/index')
-async def chat_with_documents(
+async def build_index(
     files: List[UploadFile] = File(...),
     session_id: Optional[str] = Form(None),
     use_session_dirs: bool = Form(True),

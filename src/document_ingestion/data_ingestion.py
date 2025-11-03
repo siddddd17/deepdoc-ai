@@ -47,7 +47,7 @@ class FaissManager:
 
     def _exists(self) -> bool:
         log.info("Checking for existing FAISS index and metadata")
-        return (self.metadata_file / "index.pk1").exists() and (self.index_dir / "index.faiss").exists()
+        return (self.metadata_file / "index.pkl").exists() and (self.index_dir / "index.faiss").exists()
     
     @staticmethod
     def _fingerprint(text: str, md:Dict[str, Any]) -> str:
@@ -58,7 +58,7 @@ class FaissManager:
         return hashlib.sha256(text.encode('utf-8')).hexdigest()
     
     def _save_metadata(self):
-        self.metadata_path.write_text(json.dumps(self._meta, ensure_ascii = False, indent=4), encoding = 'utf-8')
+        self.metadata_file.write_text(json.dumps(self._meta, ensure_ascii = False, indent=4), encoding = 'utf-8')
 
     def load_or_create(self,texts:Optional[List[str]]=None, metadatas: Optional[List[dict]] = None):
         ## if we running first time then it will not go in this block
@@ -69,7 +69,6 @@ class FaissManager:
                 allow_dangerous_deserialization=True,
             )
             return self.vs
-        
         
         if not texts:
             raise DeepDocException("No existing FAISS index and no data to create one", sys)
