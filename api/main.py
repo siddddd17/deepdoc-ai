@@ -136,6 +136,7 @@ async def build_index(
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
+        log.error("Failed ", error=str(e))
         raise HTTPException(status_code=500, detail=f"Chat with documents failed") from e
     except Exception as e:
         raise HTTPException(status_code=500, detail = f"Document chat failed") from e

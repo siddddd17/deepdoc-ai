@@ -4,6 +4,9 @@ langchain-core==0.3.72
 
 langchain-groq==0.3.6
 langchain-google-genai==2.1.8
+langchain-huggingface
+sentence-transformers
+
 
 faiss-cpu==1.11.0.post1
 fastapi==0.116.1
@@ -18,4 +21,6 @@ streamlit==1.47.1
 pytest==8.4.1
 pypdf==5.8.0
 cfn-lint
+tiktoken
+
 -e .

@@ -16,7 +16,6 @@ from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, Te
 from langchain_community.vectorstores import FAISS
 
 from utils.model_loader import ModelLoader
-from logger.custom_logger import CustomLogger
 from exception.custom_exception_archive import DeepDocException
 
 from utils.file_io import generate_session_id, save_uploaded_files
@@ -43,7 +42,7 @@ class FaissManager:
             
         self.model_loader = model_loader or ModelLoader()
         self.embedding_model = self.model_loader.load_embeddings()
-        self.vector_store: Optional[FAISS] = None
+        self.vs: Optional[FAISS] = None
 
     def _exists(self) -> bool:
         log.info("Checking for existing FAISS index and metadata")
@@ -80,16 +79,16 @@ class FaissManager:
         if self.vs is None:
             raise DeepDocException("Vector store is not initialized", sys)
         new_docs: List[Document] = []
-        for doc in new_docs:
+        for doc in docs:
             fp = self._fingerprint(doc.page_content, doc.metadata)
             if fp not in self._meta["rows"]:
                 new_docs.append(doc)
-                self._meta["rows"][fp] = doc.metadata
+                self._meta["rows"][fp] = True
         if new_docs:
-            self.vector_store.add_documents(new_docs)
+            self.vs.add_documents(new_docs)
+            self.vs.save_local(str(self.index_dir))
             self._save_metadata()
-            self.vector_store.save_local(str(self.index_dir))
-            self.log.info(f"Added {len(new_docs)} new documents to FAISS index", session_id=self.session_id)
+            log.info(f"Added {len(new_docs)} new documents to FAISS index", index=str(self.index_dir))
         return len(new_docs)
 
 class DocHandler: 
@@ -214,7 +213,6 @@ class ChatIngestor:
         session_id: Optional[str] = None,
     ):
         try:
-            self.log = CustomLogger().get_logger(__name__)
             self.model_loader = ModelLoader()
             self.use_session = use_session_dirs
             self.session_id = session_id or generate_session_id()
@@ -225,7 +223,7 @@ class ChatIngestor:
             self.temp_dir = self._resolve_dir(temp_base)
             self.faiss_dir = self._resolve_dir(faiss_base)
 
-            self.log.info(
+            log.info(
                 "ChatIngestor initialized",
                 temp_dir=str(self.temp_dir),
                 faiss_dir=str(self.faiss_dir),
@@ -234,7 +232,7 @@ class ChatIngestor:
                 )
 
         except Exception as e:
-            self.log.error(f"Error initializing ChatIngestor: {e}")
+            log.error(f"Error initializing ChatIngestor: {e}")
             raise DeepDocException("Error initializing ChatIngestor", sys) from e
 
     def _resolve_dir(self, base_dir: str) -> Path:
@@ -247,7 +245,7 @@ class ChatIngestor:
 
     def _split(self, text: str, chunk_size: int, chunk_overlap: int) -> List[Document]:
         splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-        self.log.info("Text splitter initialized", chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        log.info("Text splitter initialized", chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         return splitter.split_documents(text)
 
     def build_retriever(
@@ -278,7 +276,7 @@ class ChatIngestor:
                 vs = fm.load_or_create(texts=texts, metadatas=metas)
                 
             added = fm.add_documents(chunks)
-            self.log.info("FAISS index updated", added=added, index=str(self.faiss_dir))
+            log.info("FAISS index updated", added=added, index=str(self.faiss_dir))
             
             return vs.as_retriever(search_type="similarity", search_kwargs={"k": k})
             
