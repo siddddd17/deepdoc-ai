@@ -137,8 +137,6 @@ async def build_index(
         raise http_exc
     except Exception as e:
         log.error("Failed ", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Chat with documents failed") from e
-    except Exception as e:
         raise HTTPException(status_code=500, detail = f"Document chat failed") from e
 
 @app.post('/chat/query')
@@ -171,8 +169,6 @@ async def chat_with_query(
         return result
     except HTTPException as http_exc:
         raise http_exc
-    except Exception as e:  
-        raise HTTPException(status_code=500, detail=f"Chat with query failed") from e
     except Exception as e:  
         raise HTTPException(status_code=500, detail=f"Chat with query failed") from e
     
