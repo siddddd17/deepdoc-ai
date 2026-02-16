@@ -47,3 +47,8 @@ archive/
 faiss_index/
 
 data/
+
+#Sprint tickets file
+TICKETS.md
+TICKETS_COMPRESSED.md
+ARCHITECTURE_PLAN.md
