@@ -46,7 +46,7 @@ class FaissManager:
 
     def _exists(self) -> bool:
         log.info("Checking for existing FAISS index and metadata")
-        return (self.metadata_file / "index.pkl").exists() and (self.index_dir / "index.faiss").exists()
+        return (self.index_dir / "index.pkl").exists() and (self.index_dir / "index.faiss").exists()
     
     @staticmethod
     def _fingerprint(text: str, md:Dict[str, Any]) -> str:
@@ -96,7 +96,6 @@ class DocHandler:
     PDF save + read (page-wise) for analysis.
     """
     def __init__(self, data_dir: Optional[str] = None, session_id: Optional[str] = None):
-        self.log=CustomLogger().get_logger(__name__)
         self.data_dir = data_dir or os.getenv("DATA_STORAGE_PATH", os.path.join(os.getcwd(), "data", "document_analysis"))
         self.session_id = session_id or generate_session_id("session")
         self.session_path = os.path.join(self.data_dir, self.session_id)
